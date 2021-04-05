@@ -30,6 +30,10 @@ class SSEClient {
           final event = rawData.split("\n")[1];
           if (event != null && event != '') {
             print(rawData);
+            SSEResponse(
+                id: rawData.split("\n")[0],
+                event: rawData.split("\n")[1],
+                data: rawData.split("\n")[2]);
           }
         });
       });
