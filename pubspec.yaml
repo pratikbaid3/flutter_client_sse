@@ -1,8 +1,8 @@
-name: client_sse
+name: flutter_client_sse
 description: Dart package to help consume SSE
 version: 0.0.1
-author:
-homepage:
+author: Pratik Baid
+homepage: https://github.com/pratikbaid3/flutter_client_sse
 
 environment:
   sdk: ">=2.7.0 <3.0.0"
