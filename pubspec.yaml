@@ -1,7 +1,6 @@
 name: flutter_client_sse
 description: Dart package to help consume SSE
 version: 0.0.1
-author: Pratik Baid
 homepage: https://github.com/pratikbaid3/flutter_client_sse
 
 environment:
@@ -11,11 +10,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  http: ^0.13.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  http: ^0.13.1
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
