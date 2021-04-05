@@ -2,7 +2,7 @@
 
 Dart package to help consume Server Sent Events
 
-##IMPORT
+### IMPORT
 Add the following import in the ```pubspec.yaml``` file
 ```
 client_sse:
@@ -11,7 +11,7 @@ client_sse:
       path:
 ```
 
-## EXAMPLE
+### EXAMPLE
 ```
 SSEClient.subscribeToSSE(url,token)
         .listen((event) {
