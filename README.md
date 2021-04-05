@@ -14,7 +14,7 @@ Add the following import in the ```pubspec.yaml``` file
 ```yaml
 client_sse:
     git:
-      url: https://github.com/pratikbaid3/client_sse
+      url: https://github.com/pratikbaid3/flutter_client_sse
       path:
 ```
 
