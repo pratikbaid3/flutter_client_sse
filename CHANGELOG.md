@@ -1,3 +1,4 @@
-## [0.0.1] - TODO: Add release date.
+## [0.0.2] - Migrated to null safety.
 
-* TODO: Describe initial release.
+* The package is now null safe
+* Unused imports have been removed
