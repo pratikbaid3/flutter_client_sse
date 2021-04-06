@@ -1,12 +1,11 @@
 library client_sse;
 
 import 'dart:convert';
-import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 part 'sse_event_model.dart';
 
 class SSEClient {
-  static http.Client _client;
+  static late http.Client _client;
   static Stream<SSEModel> subscribeToSSE(String url, String token) async* {
     print("--SUBSCRIBING TO SSE---");
     while (true) {
