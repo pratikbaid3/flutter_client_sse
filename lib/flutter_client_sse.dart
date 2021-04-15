@@ -1,4 +1,4 @@
-library client_sse;
+library flutter_client_sse;
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -20,7 +20,7 @@ class SSEClient {
           await for (final d in data.stream) {
             final rawData = utf8.decode(d);
             final event = rawData.split("\n")[1];
-            if (event != null && event != '') {
+            if (event != '') {
               yield SSEModel.fromData(rawData);
             }
           }
