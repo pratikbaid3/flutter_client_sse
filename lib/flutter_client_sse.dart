@@ -17,12 +17,10 @@ class SSEClient {
         request.headers["Cookie"] = token;
         Future<http.StreamedResponse> response = _client.send(request);
         await for (final data in response.asStream()) {
-          await for (final d in data.stream) {
-            final rawData = utf8.decode(d);
-            final event = rawData.split("\n")[1];
-            if (event != '') {
-              yield SSEModel.fromData(rawData);
-            }
+          final rawData = await data.stream.transform(utf8.decoder).join();
+          final event = rawData.split("\n")[1];
+          if (event != '') {
+            yield SSEModel.fromData(rawData);
           }
         }
       } catch (e) {
