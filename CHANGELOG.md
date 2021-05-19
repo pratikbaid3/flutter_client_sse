@@ -10,4 +10,9 @@
 
 ## [0.0.4] - Refactored example
 
+## [0.0.5] - Improved the stability
+
+* Fixed issue causing large responses to be split
+* Improved the way UTF8 Encoder was used
+
 * Refactored the example
