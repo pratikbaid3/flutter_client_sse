@@ -5,9 +5,22 @@ import 'package:http/http.dart' as http;
 part 'sse_event_model.dart';
 
 class SSEClient {
-  static late http.Client _client;
-  static Stream<SSEModel> subscribeToSSE(String url, String token) async* {
+  
+  static http.Client _client = http.Client();
+  
+  static Stream<SSEModel> subscribeToSSE(String url, String token) {
+    
+    // the regexes we will use later
+    RegExp lineRegex = new RegExp(r"^([^:]*)(?::)?(?: )?(.*)?$");
+    RegExp removeEndingNewlineRegex = new RegExp(r"^((?:.|\n)*)\n$");
+    
+    //Creating a instance of the SSEModel
+    var currentSSEModel = SSEModel(data: '', id: '', event: '');
+    
+    // ignore: close_sinks
+    StreamController<SSEModel> streamController = new StreamController();
     print("--SUBSCRIBING TO SSE---");
+    
     while (true) {
       try {
         _client = http.Client();
@@ -16,19 +29,61 @@ class SSEClient {
         request.headers["Accept"] = "text/event-stream";
         request.headers["Cookie"] = token;
         Future<http.StreamedResponse> response = _client.send(request);
-        await for (final data in response.asStream()) {
-          final rawData = await data.stream.transform(utf8.decoder).join();
-          final event = rawData.split("\n")[1];
-          if (event != '') {
-            yield SSEModel.fromData(rawData);
-          }
-        }
+        
+        //Listening to the response as a stream
+        response.asStream().listen((data) {
+          //Applying transforms and listening to it
+          data.stream
+            .transform(Utf8Decoder())
+            .transform(LineSplitter())
+            .listen((line) {
+              if (line.isEmpty) {
+                // event is done
+                // strip ending newline from data
+                if (currentSSEModel.data != null) {
+                  var match = removeEndingNewlineRegex.firstMatch(currentSSEModel.data);
+                  currentSSEModel.data = match.group(1);
+                }
+                streamController.add(currentSSEModel);
+                currentSSEModel = SSEModel(data: '', id: '', event: '');
+                return;
+              }
+              
+              // match the line prefix and the value using the regex
+              Match match = lineRegex.firstMatch(line);
+              String field = match.group(1);
+              String value = match.group(2) ?? "";
+              if (field.isEmpty) {
+                // lines starting with a colon are to be ignored
+                return;
+              }
+              switch (field) {
+                case "event":
+                  currentSSEModel.event = value;
+                  break;
+                case "data":
+                  currentSSEModel.data = (currentSSEModel.data ?? "") + value + "\n";
+                  break;
+                case "id":
+                  currentSSEModel.id = value;
+                  break;
+                case "retry":
+                  break;
+              }
+              
+            }, onDone: () {
+              Future.delayed(Duration(seconds: 2), (){
+                print("## Reconnecting to SSE");
+                subscribeToSSE(url, token);
+              });
+            });
+        });
+        return streamController.stream;
       } catch (e) {
         print('---ERROR---');
         print(e);
-        yield SSEModel(data: '', id: '', event: '');
+        streamController.add(SSEModel(data: '', id: '', event: ''));
       }
-      await Future.delayed(Duration(seconds: 1), () {});
     }
   }
 
