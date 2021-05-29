@@ -1,5 +1,6 @@
 library flutter_client_sse;
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 part 'sse_event_model.dart';
@@ -40,9 +41,9 @@ class SSEClient {
               if (line.isEmpty) {
                 // event is done
                 // strip ending newline from data
-                if (currentSSEModel.data != null) {
-                  var match = removeEndingNewlineRegex.firstMatch(currentSSEModel.data);
-                  currentSSEModel.data = match.group(1);
+                if (currentSSEModel.data != "") {
+                  var match = removeEndingNewlineRegex.firstMatch(currentSSEModel.data)!;
+                  currentSSEModel.data = match.group(1)!;
                 }
                 streamController.add(currentSSEModel);
                 currentSSEModel = SSEModel(data: '', id: '', event: '');
@@ -50,8 +51,8 @@ class SSEClient {
               }
               
               // match the line prefix and the value using the regex
-              Match match = lineRegex.firstMatch(line);
-              String field = match.group(1);
+              Match match = lineRegex.firstMatch(line)!;
+              String field = match.group(1)!;
               String value = match.group(2) ?? "";
               if (field.isEmpty) {
                 // lines starting with a colon are to be ignored
@@ -62,7 +63,7 @@ class SSEClient {
                   currentSSEModel.event = value;
                   break;
                 case "data":
-                  currentSSEModel.data = (currentSSEModel.data ?? "") + value + "\n";
+                  currentSSEModel.data = (currentSSEModel.data) + value + "\n";
                   break;
                 case "id":
                   currentSSEModel.id = value;
