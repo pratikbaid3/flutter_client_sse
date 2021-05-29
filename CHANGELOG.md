@@ -10,4 +10,11 @@
 
 ## [0.0.4] - Refactored example
 
-* Refactored the example
+## [0.0.5] - Improved the stability
+
+* Fixed issue causing large responses to be split
+* Improved the way UTF8 Encoder was used
+
+## [0.0.6] - Fixed Stackoverflow exception
+
+* Fixed issue causing stackoverflow while loading large chunk data stream

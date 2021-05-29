@@ -41,9 +41,9 @@ class SSEClient {
               if (line.isEmpty) {
                 // event is done
                 // strip ending newline from data
-                if (currentSSEModel.data != "") {
-                  var match = removeEndingNewlineRegex.firstMatch(currentSSEModel.data)!;
-                  currentSSEModel.data = match.group(1)!;
+                if (currentSSEModel.data != null) {
+                  var match = removeEndingNewlineRegex.firstMatch(currentSSEModel.data ?? "");
+                  currentSSEModel.data = match?.group(1);
                 }
                 streamController.add(currentSSEModel);
                 currentSSEModel = SSEModel(data: '', id: '', event: '');
@@ -63,7 +63,7 @@ class SSEClient {
                   currentSSEModel.event = value;
                   break;
                 case "data":
-                  currentSSEModel.data = (currentSSEModel.data) + value + "\n";
+                  currentSSEModel.data = (currentSSEModel.data ?? "") + value + "\n";
                   break;
                 case "id":
                   currentSSEModel.id = value;

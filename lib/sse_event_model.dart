@@ -1,9 +1,9 @@
 part of flutter_client_sse;
 
 class SSEModel {
-  String id = '';
-  String event = '';
-  String data = '';
+  String? id = '';
+  String? event = '';
+  String? data = '';
   SSEModel({required this.data, required this.id, required this.event});
   SSEModel.fromData(String data) {
     id = data.split("\n")[0].split('id:')[1];
