@@ -10,11 +10,8 @@ class SSEClient {
   static Stream<SSEModel> subscribeToSSE(String url, String token) {
     //Regex to be used
     var lineRegex = RegExp(r'^([^:]*)(?::)?(?: )?(.*)?$');
-    var removeEndingNewlineRegex = RegExp(r'^((?:.|\n)*)\n$');
-
     //Creating a instance of the SSEModel
     var currentSSEModel = SSEModel(data: '', id: '', event: '');
-
     // ignore: close_sinks
     StreamController<SSEModel> streamController = new StreamController();
     print("--SUBSCRIBING TO SSE---");
@@ -22,6 +19,7 @@ class SSEClient {
       try {
         _client = http.Client();
         var request = new http.Request("GET", Uri.parse(url));
+        //Adding headers to the request
         request.headers["Cache-Control"] = "no-cache";
         request.headers["Accept"] = "text/event-stream";
         request.headers["Cookie"] = token;
@@ -35,10 +33,13 @@ class SSEClient {
                 .transform(LineSplitter())
                 .listen((dataLine) {
               if (dataLine.isEmpty) {
+                //This means that the complete event set has been read.
+                //We then add the event to the stream
                 streamController.add(currentSSEModel);
                 currentSSEModel = SSEModel(data: '', id: '', event: '');
                 return;
               }
+              //Get the match of each line through the regex
               Match match = lineRegex.firstMatch(dataLine)!;
               var field = match.group(1);
               if (field!.isEmpty) {
@@ -46,6 +47,7 @@ class SSEClient {
               }
               var value = '';
               if (field == 'data') {
+                //If the field is data, we get the data through the substring
                 value = dataLine.substring(
                   5,
                 );
