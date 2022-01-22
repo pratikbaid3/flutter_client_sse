@@ -29,51 +29,58 @@ class SSEClient {
         response.asStream().listen((data) {
           //Applying transforms and listening to it
           data.stream
-            ..transform(Utf8Decoder())
-                .transform(LineSplitter())
-                .listen((dataLine) {
-              if (dataLine.isEmpty) {
-                //This means that the complete event set has been read.
-                //We then add the event to the stream
-                streamController.add(currentSSEModel);
-                currentSSEModel = SSEModel(data: '', id: '', event: '');
-                return;
-              }
-              //Get the match of each line through the regex
-              Match match = lineRegex.firstMatch(dataLine)!;
-              var field = match.group(1);
-              if (field!.isEmpty) {
-                return;
-              }
-              var value = '';
-              if (field == 'data') {
-                //If the field is data, we get the data through the substring
-                value = dataLine.substring(
-                  5,
-                );
-              } else {
-                value = match.group(2) ?? '';
-              }
-              switch (field) {
-                case 'event':
-                  currentSSEModel.event = value;
-                  break;
-                case 'data':
-                  currentSSEModel.data =
-                      (currentSSEModel.data ?? '') + value + '\n';
-                  break;
-                case 'id':
-                  currentSSEModel.id = value;
-                  break;
-                case 'retry':
-                  break;
-              }
-            });
+            ..transform(Utf8Decoder()).transform(LineSplitter()).listen(
+              (dataLine) {
+                if (dataLine.isEmpty) {
+                  //This means that the complete event set has been read.
+                  //We then add the event to the stream
+                  streamController.add(currentSSEModel);
+                  currentSSEModel = SSEModel(data: '', id: '', event: '');
+                  return;
+                }
+                //Get the match of each line through the regex
+                Match match = lineRegex.firstMatch(dataLine)!;
+                var field = match.group(1);
+                if (field!.isEmpty) {
+                  return;
+                }
+                var value = '';
+                if (field == 'data') {
+                  //If the field is data, we get the data through the substring
+                  value = dataLine.substring(
+                    5,
+                  );
+                } else {
+                  value = match.group(2) ?? '';
+                }
+                switch (field) {
+                  case 'event':
+                    currentSSEModel.event = value;
+                    break;
+                  case 'data':
+                    currentSSEModel.data =
+                        (currentSSEModel.data ?? '') + value + '\n';
+                    break;
+                  case 'id':
+                    currentSSEModel.id = value;
+                    break;
+                  case 'retry':
+                    break;
+                }
+              },
+              onError: (e, s) {
+                // Connection error
+                streamController.addError(e, s);
+              },
+            );
+        }, onError: (e, s) {
+          // Connection initialization error
+          streamController.addError(e, s);
         });
-      } catch (e) {
+      } catch (e, s) {
         print('---ERROR---');
         print(e);
-        streamController.add(SSEModel(data: '', id: '', event: ''));
+        streamController.addError(e, s);
       }
 
       Future.delayed(Duration(seconds: 1), () {});
