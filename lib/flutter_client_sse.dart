@@ -7,10 +7,14 @@ part 'sse_event_model.dart';
 
 class SSEClient {
   static http.Client _client = new http.Client();
-  static Stream<SSEModel> subscribeToSSE(String url, String token) {
-    //Regex to be used
+
+  ///def: Subscribes to SSE
+  ///param:
+  ///[url]->URl of the SSE api
+  ///[header]->Map<String,String>, key value pair of the request header
+  static Stream<SSEModel> subscribeToSSE(
+      {required String url, required Map<String, String> header}) {
     var lineRegex = RegExp(r'^([^:]*)(?::)?(?: )?(.*)?$');
-    //Creating a instance of the SSEModel
     var currentSSEModel = SSEModel(data: '', id: '', event: '');
     // ignore: close_sinks
     StreamController<SSEModel> streamController = new StreamController();
@@ -19,26 +23,29 @@ class SSEClient {
       try {
         _client = http.Client();
         var request = new http.Request("GET", Uri.parse(url));
-        //Adding headers to the request
-        request.headers["Cache-Control"] = "no-cache";
-        request.headers["Accept"] = "text/event-stream";
-        request.headers["Cookie"] = token;
+
+        ///Adding headers to the request
+        header.forEach((key, value) {
+          request.headers[key] = value;
+        });
+
         Future<http.StreamedResponse> response = _client.send(request);
 
-        //Listening to the response as a stream
+        ///Listening to the response as a stream
         response.asStream().listen((data) {
-          //Applying transforms and listening to it
+          ///Applying transforms and listening to it
           data.stream
             ..transform(Utf8Decoder()).transform(LineSplitter()).listen(
               (dataLine) {
                 if (dataLine.isEmpty) {
-                  //This means that the complete event set has been read.
-                  //We then add the event to the stream
+                  ///This means that the complete event set has been read.
+                  ///We then add the event to the stream
                   streamController.add(currentSSEModel);
                   currentSSEModel = SSEModel(data: '', id: '', event: '');
                   return;
                 }
-                //Get the match of each line through the regex
+
+                ///Get the match of each line through the regex
                 Match match = lineRegex.firstMatch(dataLine)!;
                 var field = match.group(1);
                 if (field!.isEmpty) {
@@ -69,12 +76,14 @@ class SSEClient {
                 }
               },
               onError: (e, s) {
-                // Connection error
+                print('---ERROR---');
+                print(e);
                 streamController.addError(e, s);
               },
             );
         }, onError: (e, s) {
-          // Connection initialization error
+          print('---ERROR---');
+          print(e);
           streamController.addError(e, s);
         });
       } catch (e, s) {
