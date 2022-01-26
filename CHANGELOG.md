@@ -18,3 +18,8 @@
 ## [0.0.6] - Fixed Stackoverflow exception
 
 * Fixed issue causing stackoverflow while loading large chunk data stream
+
+## [0.1.0] - Custom header and error handling
+
+* Added ability to send custom headers
+* Added error handling
