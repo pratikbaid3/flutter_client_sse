@@ -19,7 +19,11 @@
 
 * Fixed issue causing stackoverflow while loading large chunk data stream
 
-## [0.1.0] - Custom header and error handling
+## [0.1.0] - Improved documentation
+
+* Added In-line documentation
+
+## [1.0.0] - Custom header and error handling
 
 * Added ability to send custom headers
 * Added error handling
