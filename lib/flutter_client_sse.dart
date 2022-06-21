@@ -7,6 +7,7 @@ part 'sse_event_model.dart';
 
 class SSEClient {
   static http.Client _client = new http.Client();
+  static StreamController<SSEModel> _streamController = new StreamController();
 
   ///def: Subscribes to SSE
   ///param:
@@ -17,7 +18,7 @@ class SSEClient {
     var lineRegex = RegExp(r'^([^:]*)(?::)?(?: )?(.*)?$');
     var currentSSEModel = SSEModel(data: '', id: '', event: '');
     // ignore: close_sinks
-    StreamController<SSEModel> streamController = new StreamController();
+    _streamController = new StreamController();
     print("--SUBSCRIBING TO SSE---");
     while (true) {
       try {
@@ -40,7 +41,7 @@ class SSEClient {
                 if (dataLine.isEmpty) {
                   ///This means that the complete event set has been read.
                   ///We then add the event to the stream
-                  streamController.add(currentSSEModel);
+                  _streamController.add(currentSSEModel);
                   currentSSEModel = SSEModel(data: '', id: '', event: '');
                   return;
                 }
@@ -78,26 +79,29 @@ class SSEClient {
               onError: (e, s) {
                 print('---ERROR---');
                 print(e);
-                streamController.addError(e, s);
+                _streamController.addError(e, s);
               },
             );
         }, onError: (e, s) {
           print('---ERROR---');
           print(e);
-          streamController.addError(e, s);
+          _streamController.addError(e, s);
         });
       } catch (e, s) {
         print('---ERROR---');
         print(e);
-        streamController.addError(e, s);
+        _streamController.addError(e, s);
       }
 
       Future.delayed(Duration(seconds: 1), () {});
-      return streamController.stream;
+      return _streamController.stream;
     }
   }
 
   static void unsubscribeFromSSE() {
+    // close the stream
+    _streamController.close();
+    // close the http client
     _client.close();
   }
 }
