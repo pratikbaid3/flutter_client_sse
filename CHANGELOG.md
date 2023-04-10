@@ -27,3 +27,9 @@
 
 * Added ability to send custom headers
 * Added error handling
+
+## [2.0.0-beta.1] - Ability to choose between GET and POST request and send a body with the request[BREAKING CHANGE]
+
+* The request type can now be manually set
+* Ability to pass the request body with the request
+* Safe close of the sink added as well which was causing some minor crashes

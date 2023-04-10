@@ -1,0 +1,1 @@
+enum SSERequestType { GET, POST }
