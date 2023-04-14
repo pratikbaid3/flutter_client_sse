@@ -65,8 +65,9 @@ class SSEClient {
                     currentSSEModel.event = value;
                     break;
                   case 'data':
-                    currentSSEModel.data =
-                        (currentSSEModel.data ?? '') + value + '\n';
+                    currentSSEModel.data = currentSSEModel.data.isNotEmpty
+                        ? currentSSEModel.data + "\n" + value
+                        : value;
                     break;
                   case 'id':
                     currentSSEModel.id = value;
