@@ -1,7 +1,21 @@
-import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
 import 'package:flutter_client_sse/flutter_client_sse.dart';
 
 void main() {
+  ///GET REQUEST
+  SSEClient.subscribeToSSE(
+    url: 'https://glossy-ox.glitch.me/events',
+    header: {
+      "Accept": "text/event-stream",
+      "Cache-Control": "no-cache",
+    },
+  ).listen(
+    (event) {
+      print('Id: ' + event.id!);
+      print('Event: ' + event.event!);
+      print('Data: ' + event.data!);
+    },
+  );
+
   ///GET REQUEST
   SSEClient.subscribeToSSE(
       method: SSERequestType.GET,
