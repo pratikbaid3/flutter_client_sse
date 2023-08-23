@@ -2,6 +2,7 @@ library flutter_client_sse;
 
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
 import 'package:http/http.dart' as http;
 part 'sse_event_model.dart';
 
@@ -10,10 +11,14 @@ class SSEClient {
 
   ///def: Subscribes to SSE
   ///param:
+  ///[method]->Request method ie: GET/POST
   ///[url]->URl of the SSE api
   ///[header]->Map<String,String>, key value pair of the request header
   static Stream<SSEModel> subscribeToSSE(
-      {required String url, required Map<String, String> header}) {
+      {required SSERequestType method,
+      required String url,
+      required Map<String, String> header,
+      Map<String, dynamic>? body}) {
     var lineRegex = RegExp(r'^([^:]*)(?::)?(?: )?(.*)?$');
     var currentSSEModel = SSEModel(data: '', id: '', event: '');
     // ignore: close_sinks
@@ -22,12 +27,20 @@ class SSEClient {
     while (true) {
       try {
         _client = http.Client();
-        var request = new http.Request("GET", Uri.parse(url));
+        var request = new http.Request(
+          method == SSERequestType.GET ? "GET" : "POST",
+          Uri.parse(url),
+        );
 
         ///Adding headers to the request
         header.forEach((key, value) {
           request.headers[key] = value;
         });
+
+        ///Adding body to the request if exists
+        if (body != null) {
+          request.body = jsonEncode(body);
+        }
 
         Future<http.StreamedResponse> response = _client.send(request);
 
