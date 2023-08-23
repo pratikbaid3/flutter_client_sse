@@ -33,3 +33,10 @@
 * The request type can now be manually set
 * Ability to pass the request body with the request
 * Safe close of the sink added as well which was causing some minor crashes
+
+## [2.0.0] - Ability to choose between GET and POST request and send a body with the request[BREAKING CHANGE] and some additional code refactoring and bug fixes 
+
+* The request type can now be manually set
+* Ability to pass the request body with the request
+* Safe close of the sink added as well which was causing some minor crashes
+* Stability changes in the model to handle null safety
