@@ -1,3 +1,6 @@
+## [2.1.0] - Migrated to null safety.
+
+* Closes the `StreamController` before closing the http client.
 ## [0.0.2] - Migrated to null safety.
 
 * The package is now null safe
