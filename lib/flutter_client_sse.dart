@@ -93,18 +93,15 @@ class SSEClient {
             onError: (e, s) {
               print('---ERROR---');
               print(e);
-              _streamController!.addError(e, s);
             },
           );
         }, onError: (e, s) {
           print('---ERROR---');
           print(e);
-          _streamController!.addError(e, s);
         });
       } catch (e, s) {
         print('---ERROR---');
         print(e);
-        _streamController!.addError(e, s);
       }
 
       Future.delayed(Duration(seconds: 1), () {});
