@@ -40,3 +40,7 @@
 * Ability to pass the request body with the request
 * Safe close of the sink added as well which was causing some minor crashes
 * Stability changes in the model to handle null safety
+
+## [2.0.1] - Upgrading http version
+
+* Updated http version to be compatible with the latest http package

@@ -1,10 +1,10 @@
 name: flutter_client_sse
 description: Dart package to help consume SSE API. It consumes server sent events by returning parsed model of the event, id, and the data
-version: 2.0.0
+version: 2.0.1
 homepage: https://github.com/pratikbaid3/flutter_client_sse
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: '>=2.12.0 <4.0.0'
   flutter: ">=1.17.0"
 
 dependencies:
