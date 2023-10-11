@@ -67,9 +67,9 @@ class SSEClient {
                 var value = '';
                 if (field == 'data') {
                   //If the field is data, we get the data through the substring
-                  value = dataLine.substring(
-                    5,
-                  );
+                  value = dataLine[5] == " "
+                      ? dataLine.substring(6)
+                      : dataLine.substring(5);
                 } else {
                   value = match.group(2) ?? '';
                 }
@@ -78,8 +78,9 @@ class SSEClient {
                     currentSSEModel.event = value;
                     break;
                   case 'data':
-                    currentSSEModel.data =
-                        (currentSSEModel.data ?? '') + value + '\n';
+                    currentSSEModel.data = currentSSEModel.data.isNotEmpty
+                        ? currentSSEModel.data + "\n" + value
+                        : value;
                     break;
                   case 'id':
                     currentSSEModel.id = value;
