@@ -6,14 +6,41 @@ import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
 import 'package:http/http.dart' as http;
 part 'sse_event_model.dart';
 
+/// A client for subscribing to Server-Sent Events (SSE).
 class SSEClient {
   static http.Client _client = new http.Client();
+  static StreamController<SSEModel> _streamController = StreamController();
 
-  ///def: Subscribes to SSE
-  ///param:
-  ///[method]->Request method ie: GET/POST
-  ///[url]->URl of the SSE api
-  ///[header]->Map<String,String>, key value pair of the request header
+  /// Retry the SSE connection after a delay.
+  ///
+  /// [method] is the request method (GET or POST).
+  /// [url] is the URL of the SSE endpoint.
+  /// [header] is a map of request headers.
+  /// [body] is an optional request body for POST requests.
+  static void _retryConnection(
+      {required SSERequestType method,
+      required String url,
+      required Map<String, String> header,
+      Map<String, dynamic>? body}) {
+    print('---RETRY CONNECTION---');
+    Future.delayed(Duration(seconds: 5), () {
+      subscribeToSSE(
+        method: method,
+        url: url,
+        header: header,
+        body: body,
+      );
+    });
+  }
+
+  /// Subscribe to Server-Sent Events.
+  ///
+  /// [method] is the request method (GET or POST).
+  /// [url] is the URL of the SSE endpoint.
+  /// [header] is a map of request headers.
+  /// [body] is an optional request body for POST requests.
+  ///
+  /// Returns a [Stream] of [SSEModel] representing the SSE events.
   static Stream<SSEModel> subscribeToSSE(
       {required SSERequestType method,
       required String url,
@@ -21,8 +48,6 @@ class SSEClient {
       Map<String, dynamic>? body}) {
     var lineRegex = RegExp(r'^([^:]*)(?::)?(?: )?(.*)?$');
     var currentSSEModel = SSEModel(data: '', id: '', event: '');
-    // ignore: close_sinks
-    StreamController<SSEModel> streamController = new StreamController();
     print("--SUBSCRIBING TO SSE---");
     while (true) {
       try {
@@ -32,33 +57,33 @@ class SSEClient {
           Uri.parse(url),
         );
 
-        ///Adding headers to the request
+        /// Adding headers to the request
         header.forEach((key, value) {
           request.headers[key] = value;
         });
 
-        ///Adding body to the request if exists
+        /// Adding body to the request if exists
         if (body != null) {
           request.body = jsonEncode(body);
         }
 
         Future<http.StreamedResponse> response = _client.send(request);
 
-        ///Listening to the response as a stream
+        /// Listening to the response as a stream
         response.asStream().listen((data) {
-          ///Applying transforms and listening to it
+          /// Applying transforms and listening to it
           data.stream
             ..transform(Utf8Decoder()).transform(LineSplitter()).listen(
               (dataLine) {
                 if (dataLine.isEmpty) {
-                  ///This means that the complete event set has been read.
-                  ///We then add the event to the stream
-                  streamController.add(currentSSEModel);
+                  /// This means that the complete event set has been read.
+                  /// We then add the event to the stream
+                  _streamController.add(currentSSEModel);
                   currentSSEModel = SSEModel(data: '', id: '', event: '');
                   return;
                 }
 
-                ///Get the match of each line through the regex
+                /// Get the match of each line through the regex
                 Match match = lineRegex.firstMatch(dataLine)!;
                 var field = match.group(1);
                 if (field!.isEmpty) {
@@ -66,7 +91,7 @@ class SSEClient {
                 }
                 var value = '';
                 if (field == 'data') {
-                  //If the field is data, we get the data through the substring
+                  // If the field is data, we get the data through the substring
                   value = dataLine.substring(
                     5,
                   );
@@ -86,35 +111,54 @@ class SSEClient {
                     break;
                   case 'retry':
                     break;
-                  default :
+                  default:
                     print('---ERROR---');
                     print(dataLine);
-                    print('---SUBSCRIPTION ENDED---');
+                    _retryConnection(
+                      method: method,
+                      url: url,
+                      header: header,
+                    );
                 }
               },
               onError: (e, s) {
                 print('---ERROR---');
                 print(e);
-                streamController.addError(e, s);
+                _retryConnection(
+                  method: method,
+                  url: url,
+                  header: header,
+                  body: body,
+                );
               },
             );
         }, onError: (e, s) {
           print('---ERROR---');
           print(e);
-          streamController.addError(e, s);
+          _retryConnection(
+            method: method,
+            url: url,
+            header: header,
+            body: body,
+          );
         });
       } catch (e, s) {
         print('---ERROR---');
         print(e);
-        streamController.addError(e, s);
+        _retryConnection(
+          method: method,
+          url: url,
+          header: header,
+          body: body,
+        );
       }
-
-      Future.delayed(Duration(seconds: 1), () {});
-      return streamController.stream;
+      return _streamController.stream;
     }
   }
 
+  /// Unsubscribe from the SSE.
   static void unsubscribeFromSSE() {
+    _streamController.close();
     _client.close();
   }
 }
