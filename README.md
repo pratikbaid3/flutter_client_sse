@@ -58,3 +58,23 @@ SSEClient.subscribeToSSE(
     },
 );
 ```
+
+## Running Sample Backend
+
+[Nest](https://github.com/nestjs/nest) The backend is in NestJS serving a single SSE api.
+
+## Installation
+
+```bash
+$ yarn install
+```
+
+## Running the app
+
+```bash
+# development
+$ yarn run start
+
+# watch mode
+$ yarn run start:dev
+```

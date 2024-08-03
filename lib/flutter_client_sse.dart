@@ -111,10 +111,14 @@ class SSEClient {
                     break;
                   case 'retry':
                     break;
-                  default :
+                  default:
                     print('---ERROR---');
                     print(dataLine);
-                    print('---SUBSCRIPTION ENDED---');
+                    _retryConnection(
+                      method: method,
+                      url: url,
+                      header: header,
+                    );
                 }
               },
               onError: (e, s) {
