@@ -142,7 +142,7 @@ class SSEClient {
             body: body,
           );
         });
-      } catch (e, s) {
+      } catch (e) {
         print('---ERROR---');
         print(e);
         _retryConnection(

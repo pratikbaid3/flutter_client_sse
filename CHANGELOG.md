@@ -44,3 +44,9 @@
 ## [2.0.1] - Upgrading http version
 
 * Updated http version to be compatible with the latest http package
+
+## [2.0.2] - Added retry mechanism and fixed bugs
+
+* Added auto retry mechanism to connect on error or on backend downtime
+* Fixed issue with backend returning 4xx
+* Handled memory leak issue with the stream closing
