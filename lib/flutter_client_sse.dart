@@ -8,8 +8,23 @@ part 'sse_event_model.dart';
 
 class SSEClient {
   static http.Client _client = new http.Client();
+  static StreamController<SSEModel> _streamController = StreamController();
 
-  static void _retryConnection() {}
+  static void _retryConnection(
+      {required SSERequestType method,
+      required String url,
+      required Map<String, String> header,
+      Map<String, dynamic>? body}) {
+    print('---RETRY CONNECTION---');
+    Future.delayed(Duration(seconds: 5), () {
+      subscribeToSSE(
+        method: method,
+        url: url,
+        header: header,
+        body: body,
+      );
+    });
+  }
 
   ///def: Subscribes to SSE
   ///param:
@@ -23,8 +38,6 @@ class SSEClient {
       Map<String, dynamic>? body}) {
     var lineRegex = RegExp(r'^([^:]*)(?::)?(?: )?(.*)?$');
     var currentSSEModel = SSEModel(data: '', id: '', event: '');
-    // ignore: close_sinks
-    StreamController<SSEModel> streamController = new StreamController();
     print("--SUBSCRIBING TO SSE---");
     while (true) {
       try {
@@ -55,7 +68,7 @@ class SSEClient {
                 if (dataLine.isEmpty) {
                   ///This means that the complete event set has been read.
                   ///We then add the event to the stream
-                  streamController.add(currentSSEModel);
+                  _streamController.add(currentSSEModel);
                   currentSSEModel = SSEModel(data: '', id: '', event: '');
                   return;
                 }
@@ -91,28 +104,42 @@ class SSEClient {
                 }
               },
               onError: (e, s) {
-                print('---ERROR 1---');
+                print('---ERROR---');
                 print(e);
-                streamController.addError(e, s);
+                _retryConnection(
+                  method: method,
+                  url: url,
+                  header: header,
+                  body: body,
+                );
               },
             );
         }, onError: (e, s) {
-          print('---ERROR 2---');
+          print('---ERROR---');
           print(e);
-          streamController.addError(e, s);
+          _retryConnection(
+            method: method,
+            url: url,
+            header: header,
+            body: body,
+          );
         });
       } catch (e, s) {
-        print('---ERROR 3---');
+        print('---ERROR---');
         print(e);
-        streamController.addError(e, s);
+        _retryConnection(
+          method: method,
+          url: url,
+          header: header,
+          body: body,
+        );
       }
-
-      Future.delayed(Duration(seconds: 1), () {});
-      return streamController.stream;
+      return _streamController.stream;
     }
   }
 
   static void unsubscribeFromSSE() {
+    _streamController.close();
     _client.close();
   }
 }
