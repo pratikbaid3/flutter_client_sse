@@ -9,6 +9,8 @@ part 'sse_event_model.dart';
 class SSEClient {
   static http.Client _client = new http.Client();
 
+  static void _retryConnection() {}
+
   ///def: Subscribes to SSE
   ///param:
   ///[method]->Request method ie: GET/POST
@@ -89,18 +91,18 @@ class SSEClient {
                 }
               },
               onError: (e, s) {
-                print('---ERROR---');
+                print('---ERROR 1---');
                 print(e);
                 streamController.addError(e, s);
               },
             );
         }, onError: (e, s) {
-          print('---ERROR---');
+          print('---ERROR 2---');
           print(e);
           streamController.addError(e, s);
         });
       } catch (e, s) {
-        print('---ERROR---');
+        print('---ERROR 3---');
         print(e);
         streamController.addError(e, s);
       }
