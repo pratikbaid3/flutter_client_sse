@@ -86,6 +86,10 @@ class SSEClient {
                     break;
                   case 'retry':
                     break;
+                  default :
+                    print('---ERROR---');
+                    print(dataLine);
+                    print('---SUBSCRIPTION ENDED---');
                 }
               },
               onError: (e, s) {
