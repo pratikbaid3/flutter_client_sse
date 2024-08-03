@@ -6,10 +6,17 @@ import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
 import 'package:http/http.dart' as http;
 part 'sse_event_model.dart';
 
+/// A client for subscribing to Server-Sent Events (SSE).
 class SSEClient {
   static http.Client _client = new http.Client();
   static StreamController<SSEModel> _streamController = StreamController();
 
+  /// Retry the SSE connection after a delay.
+  ///
+  /// [method] is the request method (GET or POST).
+  /// [url] is the URL of the SSE endpoint.
+  /// [header] is a map of request headers.
+  /// [body] is an optional request body for POST requests.
   static void _retryConnection(
       {required SSERequestType method,
       required String url,
@@ -26,11 +33,14 @@ class SSEClient {
     });
   }
 
-  ///def: Subscribes to SSE
-  ///param:
-  ///[method]->Request method ie: GET/POST
-  ///[url]->URl of the SSE api
-  ///[header]->Map<String,String>, key value pair of the request header
+  /// Subscribe to Server-Sent Events.
+  ///
+  /// [method] is the request method (GET or POST).
+  /// [url] is the URL of the SSE endpoint.
+  /// [header] is a map of request headers.
+  /// [body] is an optional request body for POST requests.
+  ///
+  /// Returns a [Stream] of [SSEModel] representing the SSE events.
   static Stream<SSEModel> subscribeToSSE(
       {required SSERequestType method,
       required String url,
@@ -47,33 +57,33 @@ class SSEClient {
           Uri.parse(url),
         );
 
-        ///Adding headers to the request
+        /// Adding headers to the request
         header.forEach((key, value) {
           request.headers[key] = value;
         });
 
-        ///Adding body to the request if exists
+        /// Adding body to the request if exists
         if (body != null) {
           request.body = jsonEncode(body);
         }
 
         Future<http.StreamedResponse> response = _client.send(request);
 
-        ///Listening to the response as a stream
+        /// Listening to the response as a stream
         response.asStream().listen((data) {
-          ///Applying transforms and listening to it
+          /// Applying transforms and listening to it
           data.stream
             ..transform(Utf8Decoder()).transform(LineSplitter()).listen(
               (dataLine) {
                 if (dataLine.isEmpty) {
-                  ///This means that the complete event set has been read.
-                  ///We then add the event to the stream
+                  /// This means that the complete event set has been read.
+                  /// We then add the event to the stream
                   _streamController.add(currentSSEModel);
                   currentSSEModel = SSEModel(data: '', id: '', event: '');
                   return;
                 }
 
-                ///Get the match of each line through the regex
+                /// Get the match of each line through the regex
                 Match match = lineRegex.firstMatch(dataLine)!;
                 var field = match.group(1);
                 if (field!.isEmpty) {
@@ -81,7 +91,7 @@ class SSEClient {
                 }
                 var value = '';
                 if (field == 'data') {
-                  //If the field is data, we get the data through the substring
+                  // If the field is data, we get the data through the substring
                   value = dataLine.substring(
                     5,
                   );
@@ -138,6 +148,7 @@ class SSEClient {
     }
   }
 
+  /// Unsubscribe from the SSE.
   static void unsubscribeFromSSE() {
     _streamController.close();
     _client.close();
