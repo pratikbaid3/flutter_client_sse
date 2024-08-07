@@ -105,6 +105,36 @@ void main() {
       header: {},
     );
 
-    // TODO
+    final timeout = Duration(seconds: 10);
+    bool isCompleted = false;
+
+    final subscription = stream.listen(
+          (event) {
+        print(event.data);
+        if (event.data != null && event.data!.isNotEmpty) {
+          events.add(event);
+        }
+      },
+      onError: (error) {
+        if (!isCompleted) {
+          isCompleted = true;
+        }
+      },
+      onDone: () {
+        if (!isCompleted) {
+          isCompleted = true;
+        }
+      },
+    );
+
+    await Future.any([
+      Future.delayed(timeout, () {
+        subscription.cancel();
+        if (isCompleted) {
+          throw TimeoutException('Stream completed, but should infinitely retry');
+        }
+      }),
+      subscription.asFuture(),
+    ]);
   });
 }
