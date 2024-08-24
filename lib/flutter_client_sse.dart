@@ -169,7 +169,6 @@ class SSEClient {
 
   /// Unsubscribe from the SSE.
   static void unsubscribeFromSSE() {
-    // _streamController.close();
     _client.close();
   }
 }
