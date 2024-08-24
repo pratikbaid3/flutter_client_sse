@@ -9,7 +9,6 @@ part 'sse_event_model.dart';
 /// A client for subscribing to Server-Sent Events (SSE).
 class SSEClient {
   static http.Client _client = new http.Client();
-  static StreamController<SSEModel> _streamController = StreamController();
 
   /// Retry the SSE connection after a delay.
   ///
@@ -17,10 +16,12 @@ class SSEClient {
   /// [url] is the URL of the SSE endpoint.
   /// [header] is a map of request headers.
   /// [body] is an optional request body for POST requests.
+  /// [streamController] is required to persist the stream from the old connection
   static void _retryConnection(
       {required SSERequestType method,
       required String url,
       required Map<String, String> header,
+      required StreamController<SSEModel> streamController,
       Map<String, dynamic>? body}) {
     print('---RETRY CONNECTION---');
     Future.delayed(Duration(seconds: 5), () {
@@ -29,6 +30,7 @@ class SSEClient {
         url: url,
         header: header,
         body: body,
+        oldStreamController: streamController,
       );
     });
   }
@@ -45,7 +47,12 @@ class SSEClient {
       {required SSERequestType method,
       required String url,
       required Map<String, String> header,
+      StreamController<SSEModel>? oldStreamController,
       Map<String, dynamic>? body}) {
+    StreamController<SSEModel> streamController = StreamController();
+    if (oldStreamController != null) {
+      streamController = oldStreamController;
+    }
     var lineRegex = RegExp(r'^([^:]*)(?::)?(?: )?(.*)?$');
     var currentSSEModel = SSEModel(data: '', id: '', event: '');
     print("--SUBSCRIBING TO SSE---");
@@ -78,7 +85,7 @@ class SSEClient {
                 if (dataLine.isEmpty) {
                   /// This means that the complete event set has been read.
                   /// We then add the event to the stream
-                  _streamController.add(currentSSEModel);
+                  streamController.add(currentSSEModel);
                   currentSSEModel = SSEModel(data: '', id: '', event: '');
                   return;
                 }
@@ -118,6 +125,7 @@ class SSEClient {
                       method: method,
                       url: url,
                       header: header,
+                      streamController: streamController,
                     );
                 }
               },
@@ -129,6 +137,7 @@ class SSEClient {
                   url: url,
                   header: header,
                   body: body,
+                  streamController: streamController,
                 );
               },
             );
@@ -140,6 +149,7 @@ class SSEClient {
             url: url,
             header: header,
             body: body,
+            streamController: streamController,
           );
         });
       } catch (e) {
@@ -150,15 +160,16 @@ class SSEClient {
           url: url,
           header: header,
           body: body,
+          streamController: streamController,
         );
       }
-      return _streamController.stream;
+      return streamController.stream;
     }
   }
 
   /// Unsubscribe from the SSE.
   static void unsubscribeFromSSE() {
-    _streamController.close();
+    // _streamController.close();
     _client.close();
   }
 }
