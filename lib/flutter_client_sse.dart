@@ -24,6 +24,7 @@ class SSEClient {
       required StreamController<SSEModel> streamController,
       Map<String, dynamic>? body}) {
     print('---RETRY CONNECTION---');
+    if (!_streamController.isClosed)
     Future.delayed(Duration(seconds: 5), () {
       subscribeToSSE(
         method: method,
