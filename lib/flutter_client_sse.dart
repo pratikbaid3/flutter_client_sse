@@ -2,28 +2,33 @@ library flutter_client_sse;
 
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
 import 'package:http/http.dart' as http;
+
 part 'sse_event_model.dart';
 
-/// A client for subscribing to Server-Sent Events (SSE).
 class SSEClient {
-  static http.Client _client = new http.Client();
+  static http.Client _client = http.Client();
 
-  /// Retry the SSE connection after a delay.
-  ///
-  /// [method] is the request method (GET or POST).
-  /// [url] is the URL of the SSE endpoint.
-  /// [header] is a map of request headers.
-  /// [body] is an optional request body for POST requests.
-  /// [streamController] is required to persist the stream from the old connection
-  static void _retryConnection(
-      {required SSERequestType method,
-      required String url,
-      required Map<String, String> header,
-      required StreamController<SSEModel> streamController,
-      Map<String, dynamic>? body}) {
-    print('---RETRY CONNECTION---');
+  static void _retryConnection({
+    required SSERequestType method,
+    required String url,
+    required Map<String, String> header,
+    required StreamController<SSEModel> streamController,
+    Map<String, dynamic>? body,
+    int? retriesLeft,
+    required int maxRetries,
+  }) {
+    if (retriesLeft == null || retriesLeft <= 0) {
+      print('---MAX RETRY LIMIT REACHED---');
+      streamController.addError('Erro: Max retry limit reached');
+      streamController.close();
+      _client.close();
+      return;
+    }
+
+    print('---RETRY CONNECTION ($retriesLeft retries left)---');
     Future.delayed(Duration(seconds: 5), () {
       subscribeToSSE(
         method: method,
@@ -31,128 +36,99 @@ class SSEClient {
         header: header,
         body: body,
         oldStreamController: streamController,
+        maxRetries: maxRetries,
+        retriesLeft: retriesLeft - 1,
       );
     });
   }
 
-  /// Subscribe to Server-Sent Events.
-  ///
-  /// [method] is the request method (GET or POST).
-  /// [url] is the URL of the SSE endpoint.
-  /// [header] is a map of request headers.
-  /// [body] is an optional request body for POST requests.
-  ///
-  /// Returns a [Stream] of [SSEModel] representing the SSE events.
-  static Stream<SSEModel> subscribeToSSE(
-      {required SSERequestType method,
-      required String url,
-      required Map<String, String> header,
-      StreamController<SSEModel>? oldStreamController,
-      Map<String, dynamic>? body}) {
-    StreamController<SSEModel> streamController = StreamController();
-    if (oldStreamController != null) {
-      streamController = oldStreamController;
-    }
+  static Stream<SSEModel> subscribeToSSE({
+    required SSERequestType method,
+    required String url,
+    required Map<String, String> header,
+    StreamController<SSEModel>? oldStreamController,
+    Map<String, dynamic>? body,
+    int maxRetries = 5,
+    int? retriesLeft,
+  }) {
+    StreamController<SSEModel> streamController = oldStreamController ?? StreamController();
+    retriesLeft ??= maxRetries;
+
     var lineRegex = RegExp(r'^([^:]*)(?::)?(?: )?(.*)?$');
     var currentSSEModel = SSEModel(data: '', id: '', event: '');
     print("--SUBSCRIBING TO SSE---");
-    while (true) {
-      try {
-        _client = http.Client();
-        var request = new http.Request(
-          method == SSERequestType.GET ? "GET" : "POST",
-          Uri.parse(url),
-        );
 
-        /// Adding headers to the request
-        header.forEach((key, value) {
-          request.headers[key] = value;
-        });
+    try {
+      _client = http.Client();
+      var request = http.Request(
+        method == SSERequestType.GET ? "GET" : "POST",
+        Uri.parse(url),
+      );
 
-        /// Adding body to the request if exists
-        if (body != null) {
-          request.body = jsonEncode(body);
-        }
+      header.forEach((key, value) {
+        request.headers[key] = value;
+      });
 
-        Future<http.StreamedResponse> response = _client.send(request);
+      if (body != null) {
+        request.body = jsonEncode(body);
+      }
 
-        /// Listening to the response as a stream
-        response.asStream().listen((data) {
-          /// Applying transforms and listening to it
-          data.stream
-            ..transform(Utf8Decoder()).transform(LineSplitter()).listen(
-              (dataLine) {
-                if (dataLine.isEmpty) {
-                  /// This means that the complete event set has been read.
-                  /// We then add the event to the stream
-                  streamController.add(currentSSEModel);
-                  currentSSEModel = SSEModel(data: '', id: '', event: '');
-                  return;
-                }
+      Future<http.StreamedResponse> response = _client.send(request);
 
-                /// Get the match of each line through the regex
-                Match match = lineRegex.firstMatch(dataLine)!;
-                var field = match.group(1);
-                if (field!.isEmpty) {
-                  return;
-                }
-                var value = '';
-                if (field == 'data') {
-                  // If the field is data, we get the data through the substring
-                  value = dataLine.substring(
-                    5,
-                  );
-                } else {
-                  value = match.group(2) ?? '';
-                }
-                switch (field) {
-                  case 'event':
-                    currentSSEModel.event = value;
-                    break;
-                  case 'data':
-                    currentSSEModel.data =
-                        (currentSSEModel.data ?? '') + value + '\n';
-                    break;
-                  case 'id':
-                    currentSSEModel.id = value;
-                    break;
-                  case 'retry':
-                    break;
-                  default:
-                    print('---ERROR---');
-                    print(dataLine);
-                    _retryConnection(
-                      method: method,
-                      url: url,
-                      header: header,
-                      streamController: streamController,
-                    );
-                }
-              },
-              onError: (e, s) {
+      response.asStream().listen((data) {
+        data.stream.transform(Utf8Decoder()).transform(LineSplitter()).listen(
+          (dataLine) {
+            if (dataLine.isEmpty) {
+              streamController.add(currentSSEModel);
+              currentSSEModel = SSEModel(data: '', id: '', event: '');
+              return;
+            }
+
+            Match? match = lineRegex.firstMatch(dataLine);
+            if (match == null) return;
+            var field = match.group(1);
+            if (field == null || field.isEmpty) return;
+            var value = match.group(2) ?? '';
+
+            switch (field) {
+              case 'event':
+                currentSSEModel.event = value;
+                break;
+              case 'data':
+                currentSSEModel.data = (currentSSEModel.data ?? '') + value + '\n';
+                break;
+              case 'id':
+                currentSSEModel.id = value;
+                break;
+              default:
                 print('---ERROR---');
-                print(e);
+                print(dataLine);
                 _retryConnection(
                   method: method,
                   url: url,
                   header: header,
-                  body: body,
                   streamController: streamController,
+                  body: body,
+                  retriesLeft: retriesLeft,
+                  maxRetries: maxRetries,
                 );
-              },
+            }
+          },
+          onError: (e, s) {
+            print('---ERROR---');
+            print(e);
+            _retryConnection(
+              method: method,
+              url: url,
+              header: header,
+              body: body,
+              streamController: streamController,
+              retriesLeft: retriesLeft,
+              maxRetries: maxRetries,
             );
-        }, onError: (e, s) {
-          print('---ERROR---');
-          print(e);
-          _retryConnection(
-            method: method,
-            url: url,
-            header: header,
-            body: body,
-            streamController: streamController,
-          );
-        });
-      } catch (e) {
+          },
+        );
+      }, onError: (e, s) {
         print('---ERROR---');
         print(e);
         _retryConnection(
@@ -161,13 +137,27 @@ class SSEClient {
           header: header,
           body: body,
           streamController: streamController,
+          retriesLeft: retriesLeft,
+          maxRetries: maxRetries,
         );
-      }
-      return streamController.stream;
+      });
+    } catch (e) {
+      print('---ERROR---');
+      print(e);
+      _retryConnection(
+        method: method,
+        url: url,
+        header: header,
+        body: body,
+        streamController: streamController,
+        retriesLeft: retriesLeft,
+        maxRetries: maxRetries,
+      );
     }
+
+    return streamController.stream;
   }
 
-  /// Unsubscribe from the SSE.
   static void unsubscribeFromSSE() {
     _client.close();
   }
