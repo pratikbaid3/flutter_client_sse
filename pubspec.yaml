@@ -11,10 +11,13 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.1.0
+  logging: ^1.2.0
 
 dev_dependencies:
+  test: ^1.21.4
   flutter_test:
     sdk: flutter
+  mocktail: ^1.0.4
 
 flutter:
 
