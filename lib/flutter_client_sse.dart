@@ -140,6 +140,10 @@ class SSEClient {
                   streamController: streamController,
                 );
               },
+              onDone: () {
+                print('---STREAM DONE---');
+                streamController.close();
+              },
             );
         }, onError: (e, s) {
           print('---ERROR---');
